@@ -569,7 +569,8 @@ textarea.form-input { resize: vertical; }
 .min-h-\[80px\] { min-height: 80px; }
 .min-h-\[120px\] { min-height: 120px; }
 .w-2 { width:8px; } .w-2\.5 { width:10px; } .w-3 { width:12px; } .w-4 { width:16px; } .w-5 { width:20px; } .w-6 { width:24px; } .w-7 { width:28px; } .w-8 { width:32px; } .w-10 { width:40px; } .w-12 { width:48px; } .w-16 { width:64px; } .w-48 { width:192px; } .w-56 { width:224px; } .w-64 { width:256px; } .w-72 { width:288px; } .w-80 { width:320px; }
-.h-1\.5 { height:6px; } .h-7 { height:28px; } .h-8 { height:32px; } .h-10 { height:40px; } .h-12 { height:48px; } .h-14 { height:56px; } .h-16 { height:64px; }
+.h-1\.5 { height:6px; } .h-4 { height:16px; } .h-5 { height:20px; } .h-6 { height:24px; } .h-7 { height:28px; } .h-8 { height:32px; } .h-10 { height:40px; } .h-12 { height:48px; } .h-14 { height:56px; } .h-16 { height:64px; }
+.object-cover { object-fit: cover; }
 .sm\:grid-cols-2 { grid-template-columns: repeat(2,1fr); }
 .sm\:grid-cols-3 { grid-template-columns: repeat(3,1fr); }
 @media (min-width:640px) { .sm\:grid-cols-2 { grid-template-columns:repeat(2,1fr); } .sm\:grid-cols-3 { grid-template-columns:repeat(3,1fr); } }

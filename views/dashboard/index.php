@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $user     = $_SESSION['user'] ?? [];
 $userName = explode(' ', $user['name'] ?? 'UsuÃ¡rio')[0];
 $hour     = (int)date('H');
