@@ -8,7 +8,6 @@ class ProfileController extends BaseController
         $db     = Database::getInstance();
         $userId = $_SESSION['user_id'];
 
-        $profile = $db->prepare("SELECT id,name,email,avatar,created_at FROM users WHERE id = ?")->execute([$userId]) ? null : null;
         $stmt    = $db->prepare("SELECT id,name,email,avatar,created_at FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $profile = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -31,7 +30,7 @@ class ProfileController extends BaseController
         $user   = $this->requireAuth();
         $this->validateCsrf();
         $userId = $_SESSION['user_id'];
-        $input  = $this->input();
+        $input  = $_POST;
         $db     = Database::getInstance();
 
         $name  = trim($input['name'] ?? '');

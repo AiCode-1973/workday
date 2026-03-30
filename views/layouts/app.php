@@ -125,9 +125,11 @@
 <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
 <script>
-  const APP_URL = <?= json_encode(rtrim(APP_URL, '/')) ?>;
-  const WS_HOST = <?= json_encode(WS_HOST ?? '127.0.0.1') ?>;
-  const WS_PORT = <?= (int)(WS_PORT ?? 8080) ?>;
+  const APP_URL  = <?= json_encode(rtrim(APP_URL, '/')) ?>;
+  const WS_HOST  = <?= json_encode(WS_HOST ?? '127.0.0.1') ?>;
+  const WS_PORT  = <?= (int)(WS_PORT ?? 8080) ?>;
+  const WS_UID   = <?= (int)($_SESSION['user_id'] ?? 0) ?>;
+  const WS_TOKEN = <?= json_encode(hash_hmac('sha256', 'ws:' . ($_SESSION['user_id'] ?? 0) . ':' . floor(time() / 3600), SECRET_KEY)) ?>;
 </script>
 <script src="<?= APP_URL ?>/js/app.js"></script>
 </body>

@@ -9,7 +9,7 @@
  * Este servidor é leve e não precisa de composer.
  */
 
-define('ROOT', dirname(__DIR__));
+define('ROOT', dirname(__FILE__));
 require_once ROOT . '/config/config.php';
 
 $host    = WS_HOST;
@@ -35,11 +35,18 @@ while (true) {
     if (in_array($server, $read)) {
         $client = socket_accept($server);
         if ($client !== false) {
-            $header = socket_read($client, 1024);
-            doHandshake($client, $header);
-            $clients[] = ['socket' => $client, 'id' => uniqid('ws_')];
-            $idx = array_key_last($clients);
-            echo "[WS] Cliente conectado: {$clients[$idx]['id']}\n";
+            $header = socket_read($client, 2048);
+            if (!validateWsToken($header)) {
+                $denied = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                socket_write($client, $denied, strlen($denied));
+                socket_close($client);
+                echo "[WS] Conexão recusada: token inválido\n";
+            } else {
+                doHandshake($client, $header);
+                $clients[] = ['socket' => $client, 'id' => uniqid('ws_')];
+                $idx = array_key_last($clients);
+                echo "[WS] Cliente conectado: {$clients[$idx]['id']}\n";
+            }
         }
         unset($read[array_search($server, $read)]);
     }
@@ -138,4 +145,23 @@ function persistEvent(array $payload): void {
     } catch (Throwable $e) {
         echo "[WS] DB error: {$e->getMessage()}\n";
     }
+}
+
+/**
+ * Valida o token HMAC enviado como query param no handshake WebSocket.
+ * Token gerado pelo PHP: hash_hmac('sha256', 'ws:{uid}:{hora}', SECRET_KEY)
+ * Suporta a hora atual e a hora anterior para evitar rejeição na virada de hora.
+ */
+function validateWsToken(string $headers): bool {
+    if (!preg_match('/GET ([^\s]+) HTTP/', $headers, $m)) return false;
+    parse_str(parse_url($m[1], PHP_URL_QUERY) ?? '', $params);
+    $uid   = (int)($params['uid']   ?? 0);
+    $token = $params['token'] ?? '';
+    if ($uid <= 0 || strlen($token) !== 64 || !ctype_xdigit($token)) return false;
+    $hour = (int)floor(time() / 3600);
+    foreach ([$hour, $hour - 1] as $h) {
+        $expected = hash_hmac('sha256', "ws:{$uid}:{$h}", SECRET_KEY);
+        if (hash_equals($expected, $token)) return true;
+    }
+    return false;
 }

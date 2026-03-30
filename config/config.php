@@ -13,24 +13,38 @@ define('DB_CHARSET', 'utf8mb4');
 
 /*
 |--------------------------------------------------------------------------
-| Configurações da Aplicação
+| Configurações da Aplicação — detecta ambiente pelo host
 |--------------------------------------------------------------------------
 */
 define('APP_NAME', 'Workday');
-define('APP_URL', 'http://localhost/workday');
-define('APP_ENV', 'development'); // development | production
-define('APP_DEBUG', true);
 define('APP_TIMEZONE', 'America/Sao_Paulo');
 define('APP_LOCALE', 'pt_BR');
+
+$_detected_host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+if ($_detected_host === 'workday.aicode.dev.br') {
+    // ── Produção ──────────────────────────────────────────────────────────
+    define('APP_URL',   'https://workday.aicode.dev.br');
+    define('APP_ENV',   'production');
+    define('APP_DEBUG', false);
+    define('SECRET_KEY', 'TROQUE_POR_UMA_CHAVE_ALEATORIA_E_SEGURA_PRODUCAO');
+} else {
+    // ── Desenvolvimento (localhost) ───────────────────────────────────────
+    define('APP_URL',   'http://localhost/workday');
+    define('APP_ENV',   'development');
+    define('APP_DEBUG', true);
+    define('SECRET_KEY', 'workday_secret_key_change_in_production_2024');
+}
+
+unset($_detected_host);
 
 /*
 |--------------------------------------------------------------------------
 | Configurações de Segurança
 |--------------------------------------------------------------------------
 */
-define('SECRET_KEY', 'workday_secret_key_change_in_production_2024');
-define('JWT_EXPIRY', 86400); // 24 horas em segundos
-define('SESSION_LIFETIME', 7200); // 2 horas
+define('JWT_EXPIRY',        86400); // 24 horas em segundos
+define('SESSION_LIFETIME',  7200);  // 2 horas
 
 /*
 |--------------------------------------------------------------------------

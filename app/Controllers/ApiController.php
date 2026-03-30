@@ -18,16 +18,17 @@ class ApiController extends BaseController {
             $this->json(['error' => 'Token de API necessário'], 401);
         }
 
-        $db   = Database::getInstance();
-        $stmt = $db->prepare("SELECT t.*, u.id AS uid, u.name, u.email, u.role FROM api_tokens t JOIN users u ON u.id = t.user_id WHERE t.token=? AND (t.expires_at IS NULL OR t.expires_at > NOW())");
-        $stmt->execute([$token]);
+        $db        = Database::getInstance();
+        $tokenHash = hash('sha256', $token);
+        $stmt      = $db->prepare("SELECT t.*, u.id AS uid, u.name, u.email, u.role FROM api_tokens t JOIN users u ON u.id = t.user_id WHERE t.token=? AND (t.expires_at IS NULL OR t.expires_at > NOW())");
+        $stmt->execute([$tokenHash]);
         $row  = $stmt->fetch();
         if (!$row) {
             $this->json(['error' => 'Token inválido ou expirado'], 401);
         }
 
         // Atualiza last_used
-        $db->prepare("UPDATE api_tokens SET last_used_at=NOW() WHERE token=?")->execute([$token]);
+        $db->prepare("UPDATE api_tokens SET last_used_at=NOW() WHERE token=?")->execute([$tokenHash]);
 
         $_SESSION['user_id'] = $row['uid'];
         $_SESSION['user']    = ['id' => $row['uid'], 'name' => $row['name'], 'email' => $row['email'], 'role' => $row['role']];

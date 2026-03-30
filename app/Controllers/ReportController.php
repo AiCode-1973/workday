@@ -8,42 +8,64 @@ class ReportController extends BaseController
         $db   = Database::getInstance();
 
         // Stats gerais do workspace do usuário
-        $wsId = $_SESSION['workspace_id'];
+        $wsId = (int)$_SESSION['workspace_id'];
+
+        $s = $db->prepare("SELECT COUNT(*) FROM boards WHERE workspace_id = ? AND archived_at IS NULL");
+        $s->execute([$wsId]);
+        $totalBoards = (int)$s->fetchColumn();
+
+        $s = $db->prepare("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = ? AND i.status != 'done' AND i.archived_at IS NULL");
+        $s->execute([$wsId]);
+        $openItems = (int)$s->fetchColumn();
+
+        $s = $db->prepare("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = ? AND i.status = 'done' AND i.archived_at IS NULL");
+        $s->execute([$wsId]);
+        $doneItems = (int)$s->fetchColumn();
+
+        $s = $db->prepare("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = ? AND i.due_date < NOW() AND i.status != 'done' AND i.archived_at IS NULL");
+        $s->execute([$wsId]);
+        $overdue = (int)$s->fetchColumn();
 
         $stats = [
-            'total_boards' => $db->query("SELECT COUNT(*) FROM boards WHERE workspace_id = {$wsId} AND archived_at IS NULL")->fetchColumn(),
-            'open_items'   => $db->query("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = {$wsId} AND i.status != 'done' AND i.archived_at IS NULL")->fetchColumn(),
-            'done_items'   => $db->query("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = {$wsId} AND i.status = 'done' AND i.archived_at IS NULL")->fetchColumn(),
-            'overdue'      => $db->query("SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id WHERE b.workspace_id = {$wsId} AND i.due_date < NOW() AND i.status != 'done' AND i.archived_at IS NULL")->fetchColumn(),
+            'total_boards' => $totalBoards,
+            'open_items'   => $openItems,
+            'done_items'   => $doneItems,
+            'overdue'      => $overdue,
         ];
 
         // Itens por prioridade
-        $byPriority = $db->query(
+        $s = $db->prepare(
             "SELECT i.priority, COUNT(*) AS total
              FROM items i JOIN boards b ON b.id = i.board_id
-             WHERE b.workspace_id = {$wsId} AND i.archived_at IS NULL
+             WHERE b.workspace_id = ? AND i.archived_at IS NULL
              GROUP BY i.priority ORDER BY FIELD(i.priority,'urgent','high','medium','low','none')"
-        )->fetchAll();
+        );
+        $s->execute([$wsId]);
+        $byPriority = $s->fetchAll();
 
         // Itens por membro
-        $byMember = $db->query(
+        $s = $db->prepare(
             "SELECT u.name, u.email, COUNT(DISTINCT ia.item_id) AS total
              FROM users u
              JOIN item_assignees ia ON ia.user_id = u.id
              JOIN items i ON i.id = ia.item_id
              JOIN boards b ON b.id = i.board_id
-             WHERE b.workspace_id = {$wsId} AND i.archived_at IS NULL
+             WHERE b.workspace_id = ? AND i.archived_at IS NULL
              GROUP BY u.id ORDER BY total DESC LIMIT 20"
-        )->fetchAll();
+        );
+        $s->execute([$wsId]);
+        $byMember = $s->fetchAll();
 
         // Itens criados por dia (últimos 30 dias)
-        $byDay = $db->query(
+        $s = $db->prepare(
             "SELECT DATE(i.created_at) AS day, COUNT(*) AS total
              FROM items i JOIN boards b ON b.id = i.board_id
-             WHERE b.workspace_id = {$wsId}
+             WHERE b.workspace_id = ?
                AND i.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
              GROUP BY DATE(i.created_at) ORDER BY day ASC"
-        )->fetchAll();
+        );
+        $s->execute([$wsId]);
+        $byDay = $s->fetchAll();
 
         $this->view('layouts/app', [
             'content'    => 'reports/index',

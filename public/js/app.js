@@ -610,7 +610,8 @@ const WorkdayBoard = (() => {
   function initWS() {
     if (!window.WebSocket) return;
     try {
-      const ws = new WebSocket(`ws://${window.location.hostname}:${WS_PORT || 8080}`);
+      const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${wsProto}://${window.location.hostname}:${WS_PORT || 8080}?uid=${encodeURIComponent(WS_UID || '')}&token=${encodeURIComponent(WS_TOKEN || '')}`);
       ws.onmessage = e => {
         const msg = JSON.parse(e.data);
         if (msg.board_id != STATE.board.id) return;
