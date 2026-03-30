@@ -5,10 +5,10 @@
 | Configurações do Banco de Dados
 |--------------------------------------------------------------------------
 */
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'workday');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', '186.209.113.107');
+define('DB_NAME', 'dema5738_workday');
+define('DB_USER', 'dema5738_workday');
+define('DB_PASS', 'Dema@1973');
 define('DB_CHARSET', 'utf8mb4');
 
 /*
