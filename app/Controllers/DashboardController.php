@@ -53,14 +53,18 @@ class DashboardController extends BaseController {
 
         // Atividades recentes
         $stmt = $db->prepare("
-            SELECT al.*, u.name AS user_name, u.avatar AS user_avatar,
+            SELECT al.action, al.board_id, al.item_id,
+                   MAX(al.created_at) AS created_at,
+                   u.name AS user_name, u.avatar AS user_avatar,
                    b.name AS board_name, i.title AS item_title
             FROM activity_logs al
             JOIN users u ON u.id = al.user_id
             LEFT JOIN boards b ON b.id = al.board_id
             LEFT JOIN items i ON i.id = al.item_id
             WHERE b.workspace_id = ?
-            ORDER BY al.created_at DESC LIMIT 20
+            GROUP BY al.action, al.user_id, al.board_id, al.item_id,
+                     DATE_FORMAT(al.created_at, '%Y-%m-%d %H:%i')
+            ORDER BY created_at DESC LIMIT 20
         ");
         $stmt->execute([$workspaceId]);
         $activities = $stmt->fetchAll();
@@ -77,6 +81,13 @@ class DashboardController extends BaseController {
         $stmt->execute([$workspaceId]);
         $openItems = $stmt->fetchColumn();
 
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM items i JOIN boards b ON b.id = i.board_id
+            WHERE b.workspace_id = ? AND i.done_at IS NOT NULL AND i.archived_at IS NULL
+        ");
+        $stmt->execute([$workspaceId]);
+        $doneItems = $stmt->fetchColumn();
+
         $stmt = $db->prepare("SELECT COUNT(*) FROM workspace_members WHERE workspace_id = ?");
         $stmt->execute([$workspaceId]);
         $totalMembers = $stmt->fetchColumn();
@@ -89,7 +100,7 @@ class DashboardController extends BaseController {
             'upcomingItems' => $upcomingItems,
             'notifications' => $notifications,
             'activities'    => $activities,
-            'stats'         => compact('totalBoards','openItems','totalMembers'),
+            'stats'         => compact('totalBoards','openItems','doneItems','totalMembers'),
         ]);
     }
 }

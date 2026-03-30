@@ -131,7 +131,7 @@ body { height: 100%; font-family: 'Inter', system-ui, sans-serif; font-size: 14p
 textarea.form-input { resize: vertical; }
 
 /* ============================================================
-   Cards
+   Cards (legado — usado em outras views)
    ============================================================ */
 .card {
   background: #fff;
@@ -142,7 +142,135 @@ textarea.form-input { resize: vertical; }
 }
 
 /* ============================================================
-   Badges & Labels
+   Dashboard
+   ============================================================ */
+.dash-root { padding: 32px; display: flex; flex-direction: column; gap: 28px; }
+
+/* Hero */
+.dash-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dash-hero-title { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.dash-hero-sub   { font-size: 13.5px; color: #64748b; }
+
+/* Stats */
+.dash-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+@media(max-width:900px){ .dash-stats { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:560px){ .dash-stats { grid-template-columns: 1fr 1fr; } }
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: box-shadow .2s, transform .2s;
+}
+.stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-2px); }
+
+.stat-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.stat-indigo .stat-icon { background: #eef2ff; color: #6366f1; }
+.stat-amber  .stat-icon { background: #fffbeb; color: #d97706; }
+.stat-green  .stat-icon { background: #f0fdf4; color: #16a34a; }
+.stat-violet .stat-icon { background: #faf5ff; color: #7c3aed; }
+
+.stat-body { display: flex; flex-direction: column; gap: 2px; }
+.stat-label { font-size: 12px; color: #94a3b8; font-weight: 500; }
+.stat-value { font-size: 28px; font-weight: 700; color: #0f172a; line-height: 1; }
+
+/* Body layout */
+.dash-body { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+@media(max-width:1100px){ .dash-body { grid-template-columns: 1fr; } }
+
+.dash-col-main { display: flex; flex-direction: column; gap: 20px; }
+.dash-col-side  { display: flex; flex-direction: column; gap: 20px; }
+
+/* Card base */
+.dash-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  overflow: hidden;
+}
+.dash-card-full { height: 100%; }
+
+.dash-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #f8fafc;
+}
+.dash-card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1e293b; }
+.dash-link { font-size: 12.5px; color: #6366f1; text-decoration: none; }
+.dash-link:hover { text-decoration: underline; }
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dash-count-badge { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 7px; }
+.dash-count-badge.red { background: #fef2f2; color: #dc2626; }
+
+/* Task list */
+.task-list { padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.task-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 8px; border-radius: 8px;
+  text-decoration: none; cursor: pointer;
+  transition: background .13s;
+  color: inherit;
+}
+.task-row:hover { background: #f8fafc; }
+.task-info { flex: 1; min-width: 0; }
+.task-title { font-size: 13.5px; font-weight: 500; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-board { font-size: 11.5px; color: #94a3b8; margin-top: 1px; }
+.task-date  { font-size: 12px; color: #64748b; white-space: nowrap; flex-shrink: 0; }
+.task-date.overdue { color: #ef4444; font-weight: 600; }
+
+/* Boards grid */
+.boards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 20px 20px; }
+@media(max-width:640px){ .boards-grid { grid-template-columns: 1fr; } }
+
+.board-card {
+  border: 1px solid #f1f5f9; border-radius: 12px; padding: 14px 16px;
+  text-decoration: none; display: flex; flex-direction: column; gap: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.board-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 8px rgba(99,102,241,.12); }
+.board-card-top  { display: flex; align-items: center; gap: 8px; }
+.board-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.board-name { font-size: 13px; font-weight: 600; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-pct  { font-size: 12px; color: #94a3b8; flex-shrink: 0; }
+.board-progress-track { width: 100%; height: 5px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
+.board-progress-fill  { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.board-meta { font-size: 11.5px; color: #94a3b8; }
+
+/* Activity feed */
+.activity-list { padding: 12px 20px 16px; }
+.activity-row  { display: flex; gap: 12px; padding-bottom: 16px; }
+.activity-row:last-child .activity-line { display: none; }
+
+.activity-avatar { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.act-initials {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #eef2ff; color: #6366f1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.activity-line { flex: 1; width: 2px; background: #f1f5f9; margin-top: 4px; min-height: 12px; }
+
+.activity-body { flex: 1; min-width: 0; padding-top: 4px; }
+.activity-text { font-size: 13px; color: #475569; line-height: 1.5; }
+.activity-text strong { color: #1e293b; font-weight: 600; }
+.activity-item { font-style: italic; color: #6366f1; }
+.activity-time { font-size: 11.5px; color: #94a3b8; margin-top: 3px; }
+
+/* Empty state */
+.dash-empty { padding: 32px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #cbd5e1; }
+.dash-empty p { font-size: 13px; color: #94a3b8; }
+
+
    ============================================================ */
 .badge {
   display: inline-flex;
