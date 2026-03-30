@@ -29,7 +29,7 @@ $todayPt  = date('d') . ' de ' . $ptMonths[(int)date('m') - 1] . ' de ' . date('
   <!-- â”€â”€ Header de boas-vindas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="dash-hero">
     <div class="dash-hero-text">
-      <h1 class="dash-hero-title"><?= $greeting ?>, <?= htmlspecialchars($userName) ?> ðŸ‘‹</h1>
+      <h1 class="dash-hero-title"><?= $greeting ?>, <?= htmlspecialchars($userName) ?> </h1>
       <p class="dash-hero-sub">Aqui está o resumo do seu workspace hoje, <?= $todayPt ?></p>
     </div>
     <a href="<?= APP_URL ?>/boards" class="btn-primary">
@@ -66,7 +66,7 @@ $todayPt  = date('d') . ' de ' . $ptMonths[(int)date('m') - 1] . ' de ' . date('
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
       <div class="stat-body">
-        <span class="stat-label">ConcluÃ­das</span>
+        <span class="stat-label">Concluídas</span>
         <span class="stat-value"><?= $doneItems ?></span>
       </div>
     </div>
@@ -119,13 +119,13 @@ $todayPt  = date('d') . ' de ' . $ptMonths[(int)date('m') - 1] . ' de ' . date('
         <div class="dash-card-header">
           <span class="dash-card-title">
             <span class="status-dot bg-indigo-500"></span>
-            PrÃ³ximos 7 dias
+            Próximos 7 dias
           </span>
         </div>
         <?php if (empty($upcomingItems)): ?>
           <div class="dash-empty">
             <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            <p>Nenhuma tarefa nos prÃ³ximos dias</p>
+            <p>Nenhuma tarefa nos próximos dias</p>
           </div>
         <?php else: ?>
           <div class="task-list">
@@ -150,7 +150,7 @@ $todayPt  = date('d') . ' de ' . $ptMonths[(int)date('m') - 1] . ' de ' . date('
       <div class="dash-card">
         <div class="dash-card-header">
           <span class="dash-card-title">Quadros recentes</span>
-          <a href="<?= APP_URL ?>/boards" class="dash-link">Ver todos â†’</a>
+          <a href="<?= APP_URL ?>/boards" class="dash-link">Ver todos</a>
         </div>
         <?php if (empty($boards)): ?>
           <div class="dash-empty">
@@ -173,7 +173,7 @@ $todayPt  = date('d') . ' de ' . $ptMonths[(int)date('m') - 1] . ' de ' . date('
                 <div class="board-progress-track">
                   <div class="board-progress-fill" style="width:<?= $pct ?>%;background:<?= htmlspecialchars($b['color']) ?>"></div>
                 </div>
-                <p class="board-meta"><?= $done ?>/<?= $total ?> tarefas concluÃ­das</p>
+                <p class="board-meta"><?= $done ?>/<?= $total ?> tarefas concluí­das</p>
               </a>
             <?php endforeach; ?>
           </div>
