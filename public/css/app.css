@@ -25,9 +25,53 @@ body { height: 100%; font-family: 'Inter', system-ui, sans-serif; font-size: 14p
   color: #cbd5e1;
   text-decoration: none;
   transition: background .15s, color .15s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .sidebar-link:hover { background: rgba(255,255,255,.08); color: #fff; }
 .sidebar-link.active { background: rgba(99,102,241,.25); color: #a5b4fc; }
+
+/* ============================================================
+   Sidebar — estado recolhido
+   ============================================================ */
+#sidebar {
+  transition: width .25s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+#sidebar.collapsed {
+  width: 60px !important;
+}
+#sidebar.collapsed .sidebar-label,
+#sidebar.collapsed .sidebar-logo-text,
+#sidebar.collapsed .sidebar-user-info,
+#sidebar.collapsed .sidebar-bottom-reports { display: none !important; }
+#sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 8px;
+  gap: 0;
+}
+#sidebar.collapsed .portfolio-section > div:first-child,
+#sidebar.collapsed .portfolio-section > a { display: none !important; }
+#sidebar.collapsed .sidebar-user-row { justify-content: center; }
+#sidebar.collapsed .sidebar-user-row > a:last-child { display: none !important; }
+
+/* Botão toggle da sidebar */
+#sidebarToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+#sidebarToggle:hover { background: #f1f5f9; color: #1e293b; }
 
 /* ============================================================
    Buttons

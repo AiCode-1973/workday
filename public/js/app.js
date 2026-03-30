@@ -1012,8 +1012,30 @@ function escHtml(str) {
 document.addEventListener('DOMContentLoaded', () => {
   WorkdayBoard.init();
 
-  // Sidebar toggle móvel
-  document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-    document.getElementById('sidebar')?.classList.toggle('hidden');
+  // Sidebar toggle — desktop e mobile, com estado persistido
+  const sidebar       = document.getElementById('sidebar');
+  const toggleBtn     = document.getElementById('sidebarToggle');
+  const STORAGE_KEY   = 'sidebar_collapsed';
+
+  const iconExpand = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>`;
+  const iconCollapse = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>`;
+
+  function setSidebarState(collapsed) {
+    if (!sidebar || !toggleBtn) return;
+    if (collapsed) {
+      sidebar.classList.add('collapsed');
+      toggleBtn.title = 'Expandir menu';
+    } else {
+      sidebar.classList.remove('collapsed');
+      toggleBtn.title = 'Recolher menu';
+    }
+    localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+  }
+
+  // Restaura estado salvo
+  setSidebarState(localStorage.getItem(STORAGE_KEY) === '1');
+
+  toggleBtn?.addEventListener('click', () => {
+    setSidebarState(!sidebar.classList.contains('collapsed'));
   });
 });
