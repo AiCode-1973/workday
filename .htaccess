@@ -1,0 +1,9 @@
+Options -Indexes
+RewriteEngine On
+
+# Redireciona arquivos estáticos (css/, js/, uploads/) para public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(css|js|uploads)/(.+)$ public/$1/$2 [L]
+
+# Tudo mais (incluindo a raiz /) vai para o front controller
+RewriteRule ^(.*)$ public/index.php [QSA,L]
