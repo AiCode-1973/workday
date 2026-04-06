@@ -7,7 +7,7 @@
   <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="<?= APP_URL ?>/css/app.css"/>
+  <link rel="stylesheet" href="<?= APP_URL ?>/css/app.css?v=<?= filemtime(ROOT . '/public/css/app.css') ?>"/>
 </head>
 <body class="h-full bg-gray-50 font-inter">
 
