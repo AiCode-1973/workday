@@ -193,7 +193,14 @@
 </template>
 
 <template id="itemDetailTpl">
-  <div class="flex flex-col md:flex-row max-h-[90vh]">
+  <div class="flex flex-col max-h-[90vh]">
+    <!-- Cabeçalho com botão fechar -->
+    <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 shrink-0">
+      <span class="font-semibold text-gray-700 text-sm">Detalhes do item</span>
+      <button onclick="WorkdayApp.closeModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light" title="Fechar">&times;</button>
+    </div>
+    <!-- Corpo -->
+    <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
     <!-- Main -->
     <div class="flex-1 overflow-y-auto p-6 border-r border-gray-100">
       <input id="detailTitle" class="text-xl font-bold text-gray-900 w-full border-none outline-none bg-transparent" data-field="title"/>
@@ -258,6 +265,8 @@
         <div id="activityLog" class="text-xs text-gray-500 space-y-1 max-h-32 overflow-y-auto mt-1"></div>
       </div>
       <button onclick="WorkdayItemDetail.archiveItem()" class="btn-secondary text-xs w-full text-red-500 hover:bg-red-50">Arquivar</button>
+      <button onclick="WorkdayApp.closeModal()" class="btn-primary text-xs w-full mt-1">Salvar e Fechar</button>
     </div>
+    </div><!-- fim corpo -->
   </div>
 </template>
