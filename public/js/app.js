@@ -139,7 +139,9 @@ const WorkdayBoard = (() => {
     groups.forEach(g => {
       const container = document.getElementById(`group-${g.id}`);
       if (!container) return;
-      const groupItems = STATE.items.filter(i => i.group_id == g.id);
+      const groupItems = STATE.items
+        .filter(i => i.group_id == g.id)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       container.innerHTML = groupItems.map(renderKanbanCard).join('');
 
       // Atualiza contador
@@ -339,28 +341,34 @@ const WorkdayBoard = (() => {
     if (!zone || !draggedId) return;
     e.preventDefault();
 
-    const groupId  = +zone.id.replace('group-', '');
-    const cards    = [...zone.querySelectorAll('.kanban-card:not(.drag-placeholder)')];
-    const placeholderIdx = [...zone.children].indexOf(placeholder);
-    const position = Math.max(0, placeholderIdx);
+    const groupId        = +zone.id.replace('group-', '');
+    const placeholderIdx = placeholder ? [...zone.children].indexOf(placeholder) : zone.children.length;
+    const position       = Math.max(0, placeholderIdx);
 
     placeholder?.remove();
 
+    // ── Optimistic update: atualiza o STATE e re-renderiza ANTES da rede ──
+    const item        = STATE.items.find(i => i.id === draggedId);
+    const prevGroupId = item?.group_id;
+    const prevPos     = item?.position;
+    if (item) {
+      item.group_id = groupId;
+      item.position = position;
+      const grp = STATE.board.groups.find(g => g.id === groupId);
+      if (grp) { item.group_name = grp.name; item.group_color = grp.color; }
+    }
+    const capturedId = draggedId;
+    draggedId = null;
+    renderKanban(); // card aparece imediatamente na nova coluna
+
     try {
-      await WorkdayApp.api('POST', `${APP_URL}/items/${draggedId}/move`, { group_id: groupId, position });
-      // Atualiza state local
-      const item = STATE.items.find(i => i.id === draggedId);
-      if (item) {
-        item.group_id = groupId;
-        item.position = position;
-        const grp = STATE.board.groups.find(g => g.id === groupId);
-        if (grp) { item.group_name = grp.name; item.group_color = grp.color; }
-      }
-      renderKanban();
+      await WorkdayApp.api('POST', `${APP_URL}/items/${capturedId}/move`, { group_id: groupId, position });
     } catch (err) {
+      // Reverte o card para a posição original em caso de erro
+      if (item) { item.group_id = prevGroupId; item.position = prevPos; }
+      renderKanban();
       WorkdayApp.toast(err.message, 'error');
     }
-    draggedId = null;
   }
 
   function getDragAfterElement(container, y) {
