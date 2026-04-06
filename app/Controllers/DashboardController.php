@@ -64,7 +64,7 @@ class DashboardController extends BaseController {
             WHERE b.workspace_id = ?
             GROUP BY al.action, al.user_id, al.board_id, al.item_id,
                      DATE_FORMAT(al.created_at, '%Y-%m-%d %H:%i')
-            ORDER BY created_at DESC LIMIT 20
+            ORDER BY created_at DESC LIMIT 5
         ");
         $stmt->execute([$workspaceId]);
         $activities = $stmt->fetchAll();
