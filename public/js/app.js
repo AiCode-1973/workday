@@ -638,7 +638,7 @@ const WorkdayBoard = (() => {
     } catch {}
   }
 
-  return { init, switchView, filter, quickAdd, openNewItemModal, openNewGroupModal, openItemDetail, toggleDone, openAutomationsPanel };
+  return { init, switchView, filter, quickAdd, openNewItemModal, openNewGroupModal, openItemDetail, toggleDone, openAutomationsPanel, renderCurrentView };
 })();
 
 // ============================================================
