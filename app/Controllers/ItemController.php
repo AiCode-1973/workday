@@ -13,7 +13,46 @@ class ItemController extends BaseController {
         $itemModel = new ItemModel();
         $item      = $itemModel->getDetail((int)$id);
         if (!$item) $this->json(['error' => 'Item não encontrado'], 404);
+
+        // Carrega dados de ferramenta vinculados ao item
+        $db   = Database::getInstance();
+        $stmt = $db->prepare("SELECT tool_type, content FROM item_tool_data WHERE item_id = ? LIMIT 1");
+        $stmt->execute([(int)$id]);
+        $toolRow = $stmt->fetch();
+        if ($toolRow) {
+            $item['tool_type']    = $toolRow['tool_type'];
+            $item['tool_content'] = json_decode($toolRow['content'], true);
+        }
+
         $this->json($item);
+    }
+
+    public function saveToolData(string $id): void {
+        $this->requireAuth();
+        $this->validateCsrf();
+        $itemId   = (int)$id;
+        $data     = $this->bodyJson();
+        $toolType = $data['tool_type'] ?? 'sipoc';
+        $content  = $data['content']   ?? null;
+
+        if (!in_array($toolType, ['sipoc'], true)) {
+            $this->json(['error' => 'Tipo de ferramenta inválido'], 422);
+        }
+
+        $db      = Database::getInstance();
+        $encoded = json_encode($content, JSON_UNESCAPED_UNICODE);
+
+        $check = $db->prepare("SELECT id FROM item_tool_data WHERE item_id = ? AND tool_type = ?");
+        $check->execute([$itemId, $toolType]);
+        if ($check->fetch()) {
+            $db->prepare("UPDATE item_tool_data SET content = ? WHERE item_id = ? AND tool_type = ?")
+               ->execute([$encoded, $itemId, $toolType]);
+        } else {
+            $db->prepare("INSERT INTO item_tool_data (item_id, tool_type, content) VALUES (?,?,?)")
+               ->execute([$itemId, $toolType, $encoded]);
+        }
+
+        $this->json(['message' => 'Dados salvos']);
     }
 
     public function store(string $boardId): void {

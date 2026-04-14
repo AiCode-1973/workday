@@ -7,9 +7,6 @@
     <div class="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
       <?php
         $views = ['kanban'=>'Kanban','list'=>'Lista','calendar'=>'Calendário','table'=>'Tabela'];
-        if (($board['tool'] ?? 'none') !== 'none') {
-            $views[$board['tool']] = strtoupper($board['tool']);
-        }
       ?>
       <?php foreach ($views as $v => $label): ?>
         <button data-view="<?= $v ?>"
@@ -35,6 +32,21 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         Automações
       </button>
+
+      <!-- Ferramentas dropdown -->
+      <div class="relative" id="ferramentasDropdown">
+        <button onclick="WorkdayTools.toggleDropdown()" class="btn-secondary text-sm py-1.5 flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Ferramentas
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="ferramentasMenu" class="hidden absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
+          <button onclick="WorkdayTools.openSipocModal()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2.5 transition">
+            <span class="inline-flex items-center justify-center bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full leading-none">S</span>
+            SIPOC
+          </button>
+        </div>
+      </div>
       <button onclick="WorkdayBoard.openNewItemModal()" class="btn-primary text-sm py-1.5">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Novo item
@@ -153,8 +165,9 @@
       <div id="calendarContainer" class="p-6"></div>
     </div>
 
-    <?php if (($board['tool'] ?? 'none') === 'sipoc'): ?>
-    <!-- SIPOC VIEW -->
+    <!-- SIPOC VIEW removida — agora via modal Ferramentas -->
+    <?php if (false): ?>
+    <!-- SIPOC VIEW (desabilitado) -->
     <?php
       $sipocRows  = $toolData['rows'] ?? array_fill(0, 5, ['','','','','']);
       $sipocTitle = htmlspecialchars($toolData['process_title'] ?? '');
@@ -369,16 +382,44 @@
     .sipoc-add-row-btn { display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:#6366f1;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s; }
     .sipoc-add-row-btn:hover { background:#eef2ff; }
     .sipoc-badge { font-size:11px;font-weight:700;letter-spacing:.08em;background:#6366f1;color:#fff;padding:3px 10px;border-radius:999px; }
-    @media print {
-      .sipoc-inline-bar, .sipoc-add-row, .sipoc-row-del, #sidebar, header, .shrink-0 { display:none !important; }
-      #viewSipoc { overflow:visible !important; }
-      .sipoc-cell-input { background:transparent !important; }
-    }
     </style>
-    <?php endif; ?>
+    <?php endif; /* fim bloco desabilitado */ ?>
 
-  </div>
-</div>
+  </div><!-- /#viewContainer -->
+</div><!-- /#boardApp -->
+
+<!-- Estilos SIPOC (usados nos modais de ferramenta) -->
+<style>
+.sipoc-diagram { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+.sipoc-diagram-title { font-size:15px;font-weight:700;letter-spacing:.06em;color:#6366f1;padding:16px 20px 12px;border-bottom:1px solid #f1f5f9; }
+.sipoc-letters-row { display:grid; grid-template-columns:repeat(5,1fr); }
+.sipoc-letter-cell { display:flex;align-items:center;justify-content:center;padding:20px 8px; }
+.sipoc-letter { font-size:52px;font-weight:900;color:#fff;line-height:1; }
+.sipoc-header-row { display:grid;grid-template-columns:repeat(5,1fr); }
+.sipoc-header-cell { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;text-align:center;gap:4px; }
+.sipoc-col-label { font-size:11px;font-weight:700;letter-spacing:.1em;color:#fff; }
+.sipoc-col-sub { font-size:10px;color:rgba(255,255,255,.7);line-height:1.3; }
+.sipoc-process-title-row { display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fffbeb;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a; }
+.sipoc-process-title-label { font-size:11px;font-weight:700;color:#92400e;letter-spacing:.06em;white-space:nowrap; }
+.sipoc-process-title-input { flex:1;border:none;background:transparent;font-size:13px;font-weight:500;color:#1e293b;outline:none;padding:0; }
+.sipoc-process-title-input::placeholder { color:#d1d5db; }
+.sipoc-table-header { display:grid;grid-template-columns:repeat(5,1fr);background:#1e293b; }
+.sipoc-th { padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#e2e8f0;text-align:center;border-left:1px solid rgba(255,255,255,.08); }
+.sipoc-th:first-child { border-left:none; }
+.sipoc-row { display:grid;grid-template-columns:repeat(5,1fr) 28px;border-bottom:1px solid #e2e8f0; }
+.sipoc-row:last-child { border-bottom:none; }
+.sipoc-cell { padding:4px;background:#fff;border-left:1px solid #e2e8f0; }
+.sipoc-cell:first-child { border-left:none; }
+.sipoc-cell-alt { background:#f8fafc; }
+.sipoc-cell-input { width:100%;resize:none;border:none;background:transparent;font-size:12.5px;color:#1e293b;padding:6px 8px;outline:none;line-height:1.5;font-family:inherit; }
+.sipoc-cell-input:focus { background:#eff6ff;border-radius:4px; }
+.sipoc-row-del { display:flex;align-items:center;justify-content:center;background:none;border:none;color:#cbd5e1;cursor:pointer;transition:color .15s; }
+.sipoc-row-del:hover { color:#ef4444; }
+.sipoc-add-row { padding:10px 14px;border-top:1px solid #e2e8f0;background:#f8fafc; }
+.sipoc-add-row-btn { display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:#6366f1;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s; }
+.sipoc-add-row-btn:hover { background:#eef2ff; }
+.sipoc-item-badge { display:inline-flex;align-items:center;gap:4px;background:#eef2ff;color:#6366f1;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:999px; }
+</style>
 
 <!-- Templates de modal -->
 <template id="newItemModalTpl">
@@ -455,6 +496,24 @@
         <div class="flex gap-2">
           <textarea id="newComment" rows="2" placeholder="Adicionar comentário... (@mencionar)" class="form-input flex-1 text-sm"></textarea>
           <button onclick="WorkdayItemDetail.addComment()" class="btn-primary self-end text-sm py-2 px-3">Enviar</button>
+        </div>
+      </div>
+
+      <!-- Diagrama SIPOC (visível apenas em itens SIPOC) -->
+      <div id="detailSipocSection" class="mt-6 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-semibold text-sm text-gray-700 flex items-center gap-2">
+            <span class="sipoc-item-badge">SIPOC</span>
+            Diagrama SIPOC
+          </h4>
+          <button id="saveSipocDetailBtn" onclick="WorkdayItemDetail.saveSipoc()" class="btn-primary text-xs py-1.5 px-3">Salvar</button>
+        </div>
+        <div id="detailSipocDiagram" class="sipoc-diagram text-xs overflow-x-auto"></div>
+        <div class="sipoc-add-row mt-1">
+          <button onclick="WorkdayItemDetail.addSipocRow()" class="sipoc-add-row-btn text-xs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Adicionar linha
+          </button>
         </div>
       </div>
     </div>

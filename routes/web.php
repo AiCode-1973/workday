@@ -37,6 +37,7 @@ $router->delete('/items/{id}',            [ItemController::class, 'destroy']);
 $router->get('/items/{id}/comments',      [ItemController::class, 'getComments']);
 $router->post('/items/{id}/comments',     [ItemController::class, 'addComment']);
 $router->post('/items/{id}/upload',       [ItemController::class, 'uploadFile']);
+$router->post('/items/{id}/tool-data',    [ItemController::class, 'saveToolData']);
 
 // ── Notificações ─────────────────────────────────────────────────────────
 $router->get('/notifications',              [NotificationController::class, 'index']);
