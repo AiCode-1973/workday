@@ -122,6 +122,11 @@
   <div id="modalContent" class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"></div>
 </div>
 
+<!-- Modal largo (ferramentas: SIPOC, etc.) -->
+<div id="modalWide" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div id="modalWideContent" class="bg-white rounded-2xl shadow-2xl w-full max-h-[92vh] overflow-y-auto" style="max-width:min(1100px,96vw)"></div>
+</div>
+
 <!-- Toast -->
 <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 

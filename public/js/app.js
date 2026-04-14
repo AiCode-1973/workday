@@ -43,8 +43,22 @@ const WorkdayApp = (() => {
     }, { once: true });
   }
 
+  function openWideModal(html) {
+    const modal = document.getElementById('modalWide');
+    const content = document.getElementById('modalWideContent');
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeWideModal();
+    }, { once: true });
+  }
+
   function closeModal() {
     document.getElementById('modal')?.classList.add('hidden');
+  }
+
+  function closeWideModal() {
+    document.getElementById('modalWide')?.classList.add('hidden');
   }
 
   function toast(msg, type = 'default') {
@@ -87,7 +101,7 @@ const WorkdayApp = (() => {
     return `<div class="av" title="${name}" style="background:#6366f1">${name.charAt(0).toUpperCase()}</div>`;
   }
 
-  return { api, openModal, closeModal, toast, formatDate, priorityLabel, priorityColor, avatarHtml, csrf };
+  return { api, openModal, openWideModal, closeModal, closeWideModal, toast, formatDate, priorityLabel, priorityColor, avatarHtml, csrf };
 })();
 
 // ============================================================
@@ -774,14 +788,20 @@ const WorkdayItemDetail = (() => {
       const sec = document.getElementById('detailSipocSection');
       if (sec) {
         sec.classList.remove('hidden');
-        renderSipocDetail(item.tool_content || { process_title: item.title, rows: [] });
+        const toolContent = item.tool_content || { process_title: item.title, rows: [] };
+        // Mostra título do processo na linha do acordeão
+        const titleEl = document.getElementById('detailSipocAccordionTitle');
+        if (titleEl) titleEl.textContent = toolContent.process_title || 'Diagrama SIPOC';
+        renderSipocDetail(toolContent);
       }
     }
   }
 
-  function renderSipocDetail(toolContent) {
-    const container = document.getElementById('detailSipocDiagram');
-    if (!container) return;
+  function toggleSipocAccordion() { /* mantido para compatibilidade */ }
+
+  function openSipocWide() {
+    if (!currentItem || !currentItem.tool_content) return;
+    const toolContent = currentItem.tool_content;
     const cols = [
       {bg:'#2d3748',letter:'S',label:'FORNECEDORES',sub:'quem fornece entradas?'},
       {bg:'#4a5568',letter:'I',label:'ENTRADA',sub:'o que é fornecido?'},
@@ -790,28 +810,53 @@ const WorkdayItemDetail = (() => {
       {bg:'#718096',letter:'C',label:'CLIENTE',sub:'quem recebe a saída?'},
     ];
     const rows = toolContent.rows && toolContent.rows.length ? toolContent.rows : Array(3).fill(['','','','','']);
+    const rowsHtml = rows.map((row, ri) => `
+      <div class="sipoc-row" data-row="${ri}">
+        ${[0,1,2,3,4].map(ci =>
+          `<div class="sipoc-cell${ci%2?' sipoc-cell-alt':''}"><textarea class="sipoc-cell-input" data-row="${ri}" data-col="${ci}" rows="2">${escHtml(row[ci]||'')}</textarea></div>`
+        ).join('')}
+        <button class="sipoc-row-del" onclick="WorkdayItemDetail.removeSipocRow(${ri})" title="Remover linha">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>`).join('');
 
-    container.innerHTML = `
-      <div class="sipoc-letters-row">${cols.map(c=>`<div class="sipoc-letter-cell" style="background:${c.bg}"><span class="sipoc-letter">${c.letter}</span></div>`).join('')}</div>
-      <div class="sipoc-header-row">${cols.map(c=>`<div class="sipoc-header-cell" style="background:${c.bg}"><span class="sipoc-col-label">${c.label}</span><span class="sipoc-col-sub">${c.sub}</span></div>`).join('')}</div>
-      <div class="sipoc-process-title-row">
-        <span class="sipoc-process-title-label">TÍTULO DO PROCESSO:</span>
-        <input type="text" id="detailSipocTitle" class="sipoc-process-title-input" value="${escHtml(toolContent.process_title||'')}" placeholder="Título do processo..."/>
-      </div>
-      <div class="sipoc-table-header">${cols.map(c=>`<div class="sipoc-th">${c.label}</div>`).join('')}</div>
-      <div id="detailSipocRows">
-        ${rows.map((row, ri) => `
-          <div class="sipoc-row" data-row="${ri}">
-            ${[0,1,2,3,4].map(ci=>`<div class="sipoc-cell${ci%2?' sipoc-cell-alt':''}"><textarea class="sipoc-cell-input" data-row="${ri}" data-col="${ci}" rows="2">${escHtml(row[ci]||'')}</textarea></div>`).join('')}
-            <button class="sipoc-row-del" onclick="WorkdayItemDetail.removeSipocRow(${ri})" title="Remover linha">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    WorkdayApp.openWideModal(`
+      <div class="p-6 space-y-4" style="width:min(1100px,96vw);max-height:92vh;overflow-y:auto">
+        <div class="flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="sipoc-item-badge">SIPOC</span>
+            <h3 class="text-lg font-semibold text-gray-900" id="wideModalSipocTitle">${escHtml(toolContent.process_title || currentItem.title)}</h3>
+          </div>
+          <button onclick="WorkdayApp.closeWideModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light">&times;</button>
+        </div>
+        <div class="sipoc-process-title-row" style="border-radius:8px;border:1px solid #fde68a">
+          <span class="sipoc-process-title-label">TÍTULO DO PROCESSO:</span>
+          <input type="text" id="wideSipocProcessTitle" class="sipoc-process-title-input" value="${escHtml(toolContent.process_title||'')}" placeholder="Título do processo..."/>
+        </div>
+        <div class="sipoc-diagram overflow-x-auto">
+          <div class="sipoc-letters-row">${cols.map(c=>`<div class="sipoc-letter-cell" style="background:${c.bg}"><span class="sipoc-letter">${c.letter}</span></div>`).join('')}</div>
+          <div class="sipoc-header-row">${cols.map(c=>`<div class="sipoc-header-cell" style="background:${c.bg}"><span class="sipoc-col-label">${c.label}</span><span class="sipoc-col-sub">${c.sub}</span></div>`).join('')}</div>
+          <div class="sipoc-table-header">${cols.map(c=>`<div class="sipoc-th">${c.label}</div>`).join('')}</div>
+          <div id="wideSipocRows">${rowsHtml}</div>
+          <div class="sipoc-add-row">
+            <button onclick="WorkdayItemDetail.addSipocWideRow()" class="sipoc-add-row-btn">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Adicionar linha
             </button>
-          </div>`).join('')}
-      </div>`;
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button onclick="WorkdayApp.closeWideModal()" class="btn-secondary">Fechar</button>
+          <button id="saveSipocWideBtn" onclick="WorkdayItemDetail.saveSipocWide()" class="btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            Salvar
+          </button>
+        </div>
+      </div>`);
   }
 
-  function addSipocRow() {
-    const container = document.getElementById('detailSipocRows');
+  function addSipocWideRow() {
+    const container = document.getElementById('wideSipocRows');
     if (!container) return;
     const idx = container.querySelectorAll('.sipoc-row').length;
     const div = document.createElement('div');
@@ -821,41 +866,46 @@ const WorkdayItemDetail = (() => {
     for (let ci = 0; ci < 5; ci++) {
       inner += `<div class="sipoc-cell${ci%2?' sipoc-cell-alt':''}"><textarea class="sipoc-cell-input" data-row="${idx}" data-col="${ci}" rows="2"></textarea></div>`;
     }
-    inner += `<button class="sipoc-row-del" onclick="WorkdayItemDetail.removeSipocRow(${idx})" title="Remover linha"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+    inner += `<button class="sipoc-row-del" onclick="WorkdayItemDetail.removeSipocWideRow(${idx})" title="Remover linha"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
     div.innerHTML = inner;
     container.appendChild(div);
     div.querySelector('textarea').focus();
   }
 
-  function removeSipocRow(idx) {
-    const rowEl = document.querySelector(`#detailSipocRows .sipoc-row[data-row="${idx}"]`);
+  function removeSipocWideRow(idx) {
+    const rowEl = document.querySelector(`#wideSipocRows .sipoc-row[data-row="${idx}"]`);
     if (!rowEl) return;
-    if (document.querySelectorAll('#detailSipocRows .sipoc-row').length <= 1) {
+    if (document.querySelectorAll('#wideSipocRows .sipoc-row').length <= 1) {
       WorkdayApp.toast('O diagrama precisa ter ao menos uma linha.', 'error'); return;
     }
     rowEl.remove();
-    document.querySelectorAll('#detailSipocRows .sipoc-row').forEach((r, i) => {
+    document.querySelectorAll('#wideSipocRows .sipoc-row').forEach((r, i) => {
       r.dataset.row = i;
-      r.querySelector('.sipoc-row-del').setAttribute('onclick', `WorkdayItemDetail.removeSipocRow(${i})`);
+      r.querySelector('.sipoc-row-del').setAttribute('onclick', `WorkdayItemDetail.removeSipocWideRow(${i})`);
     });
   }
 
-  async function saveSipoc() {
+  async function saveSipocWide() {
     if (!currentItem) return;
     const rows = [];
-    document.querySelectorAll('#detailSipocRows .sipoc-row').forEach(rowEl => {
+    document.querySelectorAll('#wideSipocRows .sipoc-row').forEach(rowEl => {
       const cells = [];
       rowEl.querySelectorAll('.sipoc-cell-input').forEach(ta => cells.push(ta.value));
       rows.push(cells);
     });
-    const processTitle = document.getElementById('detailSipocTitle')?.value.trim() || currentItem.title;
-    const btn = document.getElementById('saveSipocDetailBtn');
+    const processTitle = document.getElementById('wideSipocProcessTitle')?.value.trim() || currentItem.title;
+    const btn = document.getElementById('saveSipocWideBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
     try {
       await WorkdayApp.api('POST', `${APP_URL}/items/${currentItem.id}/tool-data`, {
         tool_type: 'sipoc',
         content: { process_title: processTitle, rows },
       });
+      // Atualiza cache local
+      currentItem.tool_content = { process_title: processTitle, rows };
+      const titleEl = document.getElementById('detailSipocAccordionTitle');
+      if (titleEl) titleEl.textContent = processTitle || 'Diagrama SIPOC';
+      WorkdayApp.closeWideModal();
       WorkdayApp.toast('SIPOC salvo!', 'success');
     } catch (err) {
       WorkdayApp.toast(err.message, 'error');
@@ -968,7 +1018,7 @@ const WorkdayItemDetail = (() => {
     } catch (err) { WorkdayApp.toast(err.message, 'error'); }
   }
 
-  return { open, addSubtask, addComment, archiveItem, addSipocRow, removeSipocRow, saveSipoc };
+  return { open, addSubtask, addComment, archiveItem, addSipocRow, removeSipocRow, saveSipoc, toggleSipocAccordion, openSipocWide, addSipocWideRow, removeSipocWideRow, saveSipocWide };
 })();
 
 // ============================================================
@@ -1141,14 +1191,14 @@ const WorkdayTools = (() => {
         </button>
       </div>`).join('');
 
-    WorkdayApp.openModal(`
-      <div class="p-6 space-y-4" style="min-width:min(820px,95vw);max-height:90vh;overflow-y:auto">
+    WorkdayApp.openWideModal(`
+      <div class="p-6 space-y-4" style="width:min(1100px,96vw);max-height:92vh;overflow-y:auto">
         <div class="flex items-center justify-between shrink-0">
           <div class="flex items-center gap-2">
             <span class="sipoc-item-badge">SIPOC</span>
             <h3 class="text-lg font-semibold text-gray-900">Novo diagrama SIPOC</h3>
           </div>
-          <button onclick="WorkdayApp.closeModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light">&times;</button>
+          <button onclick="WorkdayApp.closeWideModal()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light">&times;</button>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -1182,7 +1232,7 @@ const WorkdayTools = (() => {
         </div>
 
         <div class="flex justify-end gap-3 pt-2">
-          <button onclick="WorkdayApp.closeModal()" class="btn-secondary">Cancelar</button>
+          <button onclick="WorkdayApp.closeWideModal()" class="btn-secondary">Cancelar</button>
           <button id="createSipocItemBtn" onclick="WorkdayTools.saveSipocAsItem(${boardId})" class="btn-primary">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Criar item SIPOC
@@ -1275,10 +1325,11 @@ const WorkdayTools = (() => {
         attachment_count: 0,
       });
 
-      WorkdayApp.closeModal();
+      WorkdayApp.closeWideModal();
       WorkdayApp.toast('Item SIPOC criado!', 'success');
     } catch (err) {
       WorkdayApp.toast(err.message, 'error');
+    } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Criar item SIPOC'; }
     }
   }
