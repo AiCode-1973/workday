@@ -792,7 +792,6 @@ const WorkdayItemDetail = (() => {
         // Mostra título do processo na linha do acordeão
         const titleEl = document.getElementById('detailSipocAccordionTitle');
         if (titleEl) titleEl.textContent = toolContent.process_title || 'Diagrama SIPOC';
-        renderSipocDetail(toolContent);
       }
     }
   }

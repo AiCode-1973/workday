@@ -61,14 +61,8 @@ class BoardController extends BaseController {
         $stmt->execute([$_SESSION['workspace_id'] ?? 0]);
         $members = $stmt->fetchAll();
 
-        // Dados da ferramenta (se houver)
+        // Dados da ferramenta (mantidos para compatibilidade com view, mas não mais utilizados)
         $toolData = null;
-        if (($board['tool'] ?? 'none') !== 'none') {
-            $stmt = $db->prepare("SELECT content FROM board_tool_data WHERE board_id = ? AND tool_type = ?");
-            $stmt->execute([$boardId, $board['tool']]);
-            $raw = $stmt->fetchColumn();
-            $toolData = $raw ? json_decode($raw, true) : null;
-        }
 
         $this->view('layouts/app', [
             'pageTitle' => $board['name'],
@@ -101,7 +95,6 @@ class BoardController extends BaseController {
             'description'  => $data['description'] ?? null,
             'color'        => $data['color'] ?? '#6366f1',
             'default_view' => $data['default_view'] ?? 'kanban',
-            'tool'         => in_array($data['tool'] ?? '', ['sipoc']) ? $data['tool'] : 'none',
             'created_by'   => $user['id'],
         ]);
 
