@@ -54,6 +54,10 @@ $router->get('/api/boards',              [ApiController::class, 'boards']);
 $router->get('/api/boards/{id}/items',   [ApiController::class, 'boardItems']);
 $router->get('/api/items/{id}',          [ApiController::class, 'item']);
 
+// ── Ferramentas por Quadro ───────────────────────────────────────────────
+$router->get('/boards/{boardId}/tool',  [BoardController::class, 'toolView']);
+$router->post('/boards/{boardId}/tool', [BoardController::class, 'saveTool']);
+
 // ── Relatórios ────────────────────────────────────────────────────────────
 $router->get('/reports',              [ReportController::class, 'index']);
 $router->get('/reports/export-csv',   [ReportController::class, 'exportCsv']);

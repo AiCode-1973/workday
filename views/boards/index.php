@@ -80,38 +80,118 @@
   <?php endif; ?>
 </div>
 
-<!-- Modal novo board (template) -->
+<!-- Modal novo board — 2 passos -->
 <template id="newBoardModalTpl">
-  <div class="p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Criar novo quadro</h3>
-    <form id="newBoardForm" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nome*</label>
-        <input type="text" name="name" required class="form-input" placeholder="Meu projeto"/>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-        <textarea name="description" rows="2" class="form-input" placeholder="Descrição opcional"></textarea>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
+  <div class="p-6 w-full" style="max-width:520px">
+
+    <!-- Indicador de passo -->
+    <div class="flex items-center gap-2 mb-5">
+      <div class="nb-step-dot nb-step-active" id="nbDot1">1</div>
+      <div class="nb-step-line"></div>
+      <div class="nb-step-dot" id="nbDot2">2</div>
+      <span class="text-xs text-gray-400 ml-2" id="nbStepLabel">Informações do quadro</span>
+    </div>
+
+    <!-- PASSO 1: dados do quadro -->
+    <div id="nbStep1">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Criar novo quadro</h3>
+      <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-          <input type="color" name="color" value="#6366f1" class="h-10 w-full rounded-lg border border-gray-300 cursor-pointer p-1"/>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+          <input type="text" id="nbName" required class="form-input" placeholder="Meu projeto"/>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Visualização padrão</label>
-          <select name="default_view" class="form-input">
-            <option value="kanban">Kanban</option>
-            <option value="list">Lista</option>
-            <option value="calendar">Calendário</option>
-            <option value="table">Tabela</option>
-          </select>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <textarea id="nbDesc" rows="2" class="form-input" placeholder="Descrição opcional"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+            <input type="color" id="nbColor" value="#6366f1" class="h-10 w-full rounded-lg border border-gray-300 cursor-pointer p-1"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Visualização padrão</label>
+            <select id="nbView" class="form-input">
+              <option value="kanban">Kanban</option>
+              <option value="list">Lista</option>
+              <option value="calendar">Calendário</option>
+              <option value="table">Tabela</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
+      <div class="flex justify-end gap-3 pt-4">
         <button type="button" onclick="WorkdayApp.closeModal()" class="btn-secondary">Cancelar</button>
-        <button type="submit" class="btn-primary">Criar quadro</button>
+        <button type="button" id="nbNextBtn" class="btn-primary">
+          Próximo: Ferramentas
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
       </div>
-    </form>
+    </div>
+
+    <!-- PASSO 2: escolha da ferramenta -->
+    <div id="nbStep2" style="display:none">
+      <h3 class="text-lg font-semibold text-gray-900 mb-1">Ferramentas</h3>
+      <p class="text-sm text-gray-500 mb-4">Escolha uma ferramenta para associar a este quadro (opcional).</p>
+
+      <div class="grid grid-cols-2 gap-3" id="nbToolGrid">
+
+        <!-- Nenhuma -->
+        <label class="nb-tool-card nb-tool-selected" data-tool="none">
+          <input type="radio" name="nbTool" value="none" checked class="sr-only"/>
+          <div class="nb-tool-icon" style="background:#f1f5f9">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+          </div>
+          <span class="nb-tool-name">Nenhuma</span>
+          <span class="nb-tool-sub">Quadro simples</span>
+        </label>
+
+        <!-- SIPOC -->
+        <label class="nb-tool-card" data-tool="sipoc">
+          <input type="radio" name="nbTool" value="sipoc" class="sr-only"/>
+          <div class="nb-tool-icon" style="background:#eef2ff">
+            <svg class="w-6 h-6" style="color:#6366f1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M3 14h18M10 3v18M14 3v18"/></svg>
+          </div>
+          <span class="nb-tool-name">SIPOC</span>
+          <span class="nb-tool-sub">Diagrama de processo</span>
+        </label>
+
+      </div>
+
+      <div class="flex justify-between gap-3 pt-5">
+        <button type="button" id="nbBackBtn" class="btn-secondary">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Voltar
+        </button>
+        <button type="button" id="nbCreateBtn" class="btn-primary">Criar quadro</button>
+      </div>
+    </div>
+
   </div>
 </template>
+
+<style>
+.nb-step-dot {
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+  background:#e5e7eb;color:#6b7280;
+}
+.nb-step-dot.nb-step-active { background:#6366f1;color:#fff; }
+.nb-step-line { flex:1;height:2px;background:#e5e7eb;max-width:40px; }
+.nb-tool-card {
+  display:flex;flex-direction:column;align-items:center;
+  gap:8px;padding:16px 12px;
+  border:2px solid #e5e7eb;border-radius:12px;
+  cursor:pointer;transition:border-color .15s,box-shadow .15s;
+  text-align:center;
+}
+.nb-tool-card:hover { border-color:#a5b4fc; }
+.nb-tool-card.nb-tool-selected { border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.nb-tool-icon {
+  width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+}
+.nb-tool-name { font-size:13px;font-weight:600;color:#111827; }
+.nb-tool-sub  { font-size:11px;color:#6b7280; }
+</style>

@@ -119,7 +119,7 @@ const WorkdayBoard = (() => {
   }
 
   function switchView(view) {
-    ['kanban','list','table','calendar'].forEach(v => {
+    ['kanban','list','table','calendar','sipoc'].forEach(v => {
       document.getElementById(`view${v.charAt(0).toUpperCase()+v.slice(1)}`)?.classList.toggle('hidden', v !== view);
     });
     document.querySelectorAll('.view-btn').forEach(btn => {
@@ -985,21 +985,74 @@ const WorkdayBoards = (() => {
   function openNewBoardModal(portfolioId = null) {
     const tpl = document.getElementById('newBoardModalTpl');
     WorkdayApp.openModal(tpl.content.firstElementChild.outerHTML);
-    document.getElementById('newBoardForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
+
+    // ── Lógica dos passos ────────────────────────────────────────
+    const step1    = document.getElementById('nbStep1');
+    const step2    = document.getElementById('nbStep2');
+    const dot1     = document.getElementById('nbDot1');
+    const dot2     = document.getElementById('nbDot2');
+    const stepLbl  = document.getElementById('nbStepLabel');
+
+    function goToStep2() {
+      const name = document.getElementById('nbName').value.trim();
+      if (!name) {
+        document.getElementById('nbName').focus();
+        WorkdayApp.toast('Informe o nome do quadro.', 'error');
+        return;
+      }
+      step1.style.display = 'none';
+      step2.style.display = '';
+      dot1.classList.remove('nb-step-active');
+      dot2.classList.add('nb-step-active');
+      stepLbl.textContent = 'Ferramenta';
+    }
+
+    function goToStep1() {
+      step2.style.display = 'none';
+      step1.style.display = '';
+      dot2.classList.remove('nb-step-active');
+      dot1.classList.add('nb-step-active');
+      stepLbl.textContent = 'Informações do quadro';
+    }
+
+    document.getElementById('nbNextBtn').addEventListener('click', goToStep2);
+    document.getElementById('nbBackBtn').addEventListener('click', goToStep1);
+
+    // ── Seleção de ferramentas (radio visual) ────────────────────
+    document.getElementById('nbToolGrid').addEventListener('click', e => {
+      const card = e.target.closest('.nb-tool-card');
+      if (!card) return;
+      document.querySelectorAll('.nb-tool-card').forEach(c => c.classList.remove('nb-tool-selected'));
+      card.classList.add('nb-tool-selected');
+      card.querySelector('input[type=radio]').checked = true;
+    });
+
+    // ── Criar quadro ─────────────────────────────────────────────
+    document.getElementById('nbCreateBtn').addEventListener('click', async () => {
+      const btn  = document.getElementById('nbCreateBtn');
+      const tool = document.querySelector('input[name="nbTool"]:checked')?.value ?? 'none';
+      btn.disabled = true;
+      btn.textContent = 'Criando...';
       try {
         const res = await WorkdayApp.api('POST', `${APP_URL}/boards`, {
-          name:         fd.get('name'),
-          description:  fd.get('description') || null,
-          color:        fd.get('color') || '#6366f1',
-          default_view: fd.get('default_view') || 'kanban',
+          name:         document.getElementById('nbName').value.trim(),
+          description:  document.getElementById('nbDesc').value.trim() || null,
+          color:        document.getElementById('nbColor').value || '#6366f1',
+          default_view: document.getElementById('nbView').value  || 'kanban',
+          tool:         tool,
           portfolio_id: portfolioId,
         });
         WorkdayApp.closeModal();
         WorkdayApp.toast('Quadro criado!', 'success');
-        setTimeout(() => window.location.href = `${APP_URL}/boards/${res.id}`, 600);
-      } catch (err) { WorkdayApp.toast(err.message, 'error'); }
+        const dest = tool !== 'none'
+          ? `${APP_URL}/boards/${res.id}/tool`
+          : `${APP_URL}/boards/${res.id}`;
+        setTimeout(() => window.location.href = dest, 600);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Criar quadro';
+        WorkdayApp.toast(err.message, 'error');
+      }
     });
   }
   return { openNewBoardModal };

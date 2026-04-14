@@ -5,10 +5,16 @@
   <div class="shrink-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-wrap">
     <!-- View switcher -->
     <div class="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
-      <?php foreach (['kanban'=>'Kanban','list'=>'Lista','calendar'=>'Calendário','table'=>'Tabela'] as $v => $label): ?>
+      <?php
+        $views = ['kanban'=>'Kanban','list'=>'Lista','calendar'=>'Calendário','table'=>'Tabela'];
+        if (($board['tool'] ?? 'none') !== 'none') {
+            $views[$board['tool']] = strtoupper($board['tool']);
+        }
+      ?>
+      <?php foreach ($views as $v => $label): ?>
         <button data-view="<?= $v ?>"
                 class="view-btn px-3 py-1.5 text-sm rounded-md font-medium transition <?= $view === $v ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700' ?>"
-                onclick="WorkdayBoard.switchView('<?= $v ?>')">
+                onclick="WorkdayBoard.switchView('<?= $v ?>')">  
           <?= $label ?>
         </button>
       <?php endforeach; ?>
@@ -146,6 +152,230 @@
     <div id="viewCalendar" class="view-panel h-full overflow-auto <?= $view !== 'calendar' ? 'hidden' : '' ?>">
       <div id="calendarContainer" class="p-6"></div>
     </div>
+
+    <?php if (($board['tool'] ?? 'none') === 'sipoc'): ?>
+    <!-- SIPOC VIEW -->
+    <?php
+      $sipocRows  = $toolData['rows'] ?? array_fill(0, 5, ['','','','','']);
+      $sipocTitle = htmlspecialchars($toolData['process_title'] ?? '');
+      $sipocCols  = [
+          ['bg'=>'#2d3748','letter'=>'S','label'=>'FORNECEDORES','sub'=>'quem fornece entradas?'],
+          ['bg'=>'#4a5568','letter'=>'I','label'=>'ENTRADA',      'sub'=>'o que é fornecido?'],
+          ['bg'=>'#2d3748','letter'=>'P','label'=>'PROCESSO',     'sub'=>'etapas que convertem in → out'],
+          ['bg'=>'#4a5568','letter'=>'O','label'=>'SAÍDA',        'sub'=>'resultado do processo'],
+          ['bg'=>'#718096','letter'=>'C','label'=>'CLIENTE',      'sub'=>'quem recebe a saída?'],
+      ];
+    ?>
+    <div id="viewSipoc" class="view-panel h-full overflow-auto <?= $view !== 'sipoc' ? 'hidden' : '' ?>">
+      <div class="sipoc-inline-wrapper">
+
+        <!-- Ações topo -->
+        <div class="sipoc-inline-bar">
+          <span class="sipoc-badge">SIPOC</span>
+          <div style="flex:1"></div>
+          <button class="btn-secondary text-sm" onclick="window.print()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir
+          </button>
+          <button class="btn-primary text-sm" onclick="SipocEditor.save()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            Salvar
+          </button>
+        </div>
+
+        <!-- Diagrama -->
+        <div class="sipoc-diagram" id="sipocDiagram">
+          <div class="sipoc-diagram-title">MODELO DE DIAGRAMA SIPOC</div>
+
+          <!-- Letras -->
+          <div class="sipoc-letters-row">
+            <?php foreach ($sipocCols as $col): ?>
+              <div class="sipoc-letter-cell" style="background:<?= $col['bg'] ?>">
+                <span class="sipoc-letter"><?= $col['letter'] ?></span>
+              </div>
+            <?php endforeach; ?>
+          </div>
+
+          <!-- Cabeçalhos -->
+          <div class="sipoc-header-row">
+            <?php foreach ($sipocCols as $col): ?>
+              <div class="sipoc-header-cell" style="background:<?= $col['bg'] ?>">
+                <span class="sipoc-col-label"><?= $col['label'] ?></span>
+                <span class="sipoc-col-sub"><?= htmlspecialchars($col['sub']) ?></span>
+              </div>
+            <?php endforeach; ?>
+          </div>
+
+          <!-- Título do processo -->
+          <div class="sipoc-process-title-row">
+            <span class="sipoc-process-title-label">TÍTULO DO PROCESSO:</span>
+            <input type="text" id="sipocProcessTitle" class="sipoc-process-title-input"
+                   placeholder="Digite o título do processo..." value="<?= $sipocTitle ?>"/>
+          </div>
+
+          <!-- Cabeçalho da tabela -->
+          <div class="sipoc-table-header">
+            <?php foreach ($sipocCols as $col): ?>
+              <div class="sipoc-th"><?= $col['label'] ?></div>
+            <?php endforeach; ?>
+          </div>
+
+          <!-- Linhas -->
+          <div id="sipocRows">
+            <?php foreach ($sipocRows as $ri => $row): ?>
+              <div class="sipoc-row" data-row="<?= $ri ?>">
+                <?php for ($ci = 0; $ci < 5; $ci++): ?>
+                  <div class="sipoc-cell <?= $ci % 2 !== 0 ? 'sipoc-cell-alt' : '' ?>">
+                    <textarea class="sipoc-cell-input" data-row="<?= $ri ?>" data-col="<?= $ci ?>" rows="2"
+                    ><?= htmlspecialchars($row[$ci] ?? '') ?></textarea>
+                  </div>
+                <?php endfor; ?>
+                <button class="sipoc-row-del" onclick="SipocEditor.removeRow(<?= $ri ?>)" title="Remover linha">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            <?php endforeach; ?>
+          </div>
+
+          <!-- Adicionar linha -->
+          <div class="sipoc-add-row">
+            <button onclick="SipocEditor.addRow()" class="sipoc-add-row-btn">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Adicionar linha
+            </button>
+          </div>
+        </div><!-- /.sipoc-diagram -->
+      </div><!-- /.sipoc-inline-wrapper -->
+    </div><!-- #viewSipoc -->
+
+    <!-- Scripts e estilos SIPOC embutidos -->
+    <script>
+    const SipocEditor = (() => {
+      const BOARD_ID = <?= $board['id'] ?>;
+      const API_URL  = '<?= APP_URL ?>/boards/' + BOARD_ID + '/tool';
+      const csrf     = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+      function getRows() {
+        const rows = [];
+        document.querySelectorAll('#sipocRows .sipoc-row').forEach(rowEl => {
+          const cells = [];
+          rowEl.querySelectorAll('.sipoc-cell-input').forEach(ta => cells.push(ta.value));
+          rows.push(cells);
+        });
+        return rows;
+      }
+
+      function reindexRows() {
+        document.querySelectorAll('#sipocRows .sipoc-row').forEach((rowEl, i) => {
+          rowEl.dataset.row = i;
+          rowEl.querySelector('.sipoc-row-del').setAttribute('onclick', `SipocEditor.removeRow(${i})`);
+        });
+      }
+
+      function addRow() {
+        const container = document.getElementById('sipocRows');
+        const idx = container.querySelectorAll('.sipoc-row').length;
+        const div = document.createElement('div');
+        div.className = 'sipoc-row';
+        div.dataset.row = idx;
+        let inner = '';
+        for (let ci = 0; ci < 5; ci++) {
+          inner += `<div class="sipoc-cell${ci % 2 !== 0 ? ' sipoc-cell-alt' : ''}">
+            <textarea class="sipoc-cell-input" data-row="${idx}" data-col="${ci}" rows="2"></textarea></div>`;
+        }
+        inner += `<button class="sipoc-row-del" onclick="SipocEditor.removeRow(${idx})" title="Remover linha">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+        div.innerHTML = inner;
+        container.appendChild(div);
+        div.querySelector('textarea').focus();
+      }
+
+      function removeRow(idx) {
+        const rowEl = document.querySelector(`#sipocRows .sipoc-row[data-row="${idx}"]`);
+        if (!rowEl) return;
+        if (document.querySelectorAll('#sipocRows .sipoc-row').length <= 1) {
+          WorkdayApp.toast('O diagrama precisa ter ao menos uma linha.', 'error'); return;
+        }
+        rowEl.remove();
+        reindexRows();
+      }
+
+      async function save() {
+        const btn = document.querySelector('#viewSipoc .btn-primary');
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+        try {
+          const payload = {
+            process_title: document.getElementById('sipocProcessTitle').value.trim(),
+            rows: getRows(),
+          };
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'X-CSRF-Token': csrf(), 'X-Requested-With':'XMLHttpRequest' },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error ?? 'Erro ao salvar');
+          WorkdayApp.toast('SIPOC salvo com sucesso!', 'success');
+        } catch (e) {
+          WorkdayApp.toast(e.message, 'error');
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg> Salvar`; }
+        }
+      }
+
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('viewSipoc') && !document.getElementById('viewSipoc').classList.contains('hidden')) {
+          e.preventDefault(); save();
+        }
+      });
+
+      return { addRow, removeRow, save };
+    })();
+    </script>
+
+    <style>
+    .sipoc-inline-wrapper { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+    .sipoc-inline-bar {
+      display:flex; align-items:center; gap:8px; margin-bottom:16px;
+    }
+    /* Reutiliza os estilos da view standalone */
+    .sipoc-diagram { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
+    .sipoc-diagram-title { font-size:15px;font-weight:700;letter-spacing:.06em;color:#6366f1;padding:16px 20px 12px;border-bottom:1px solid #f1f5f9; }
+    .sipoc-letters-row { display:grid; grid-template-columns:repeat(5,1fr); }
+    .sipoc-letter-cell { display:flex;align-items:center;justify-content:center;padding:20px 8px; }
+    .sipoc-letter { font-size:52px;font-weight:900;color:#fff;line-height:1; }
+    .sipoc-header-row { display:grid;grid-template-columns:repeat(5,1fr); }
+    .sipoc-header-cell { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;text-align:center;gap:4px; }
+    .sipoc-col-label { font-size:11px;font-weight:700;letter-spacing:.1em;color:#fff; }
+    .sipoc-col-sub { font-size:10px;color:rgba(255,255,255,.7);line-height:1.3; }
+    .sipoc-process-title-row { display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fffbeb;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a; }
+    .sipoc-process-title-label { font-size:11px;font-weight:700;color:#92400e;letter-spacing:.06em;white-space:nowrap; }
+    .sipoc-process-title-input { flex:1;border:none;background:transparent;font-size:13px;font-weight:500;color:#1e293b;outline:none;padding:0; }
+    .sipoc-process-title-input::placeholder { color:#d1d5db; }
+    .sipoc-table-header { display:grid;grid-template-columns:repeat(5,1fr);background:#1e293b; }
+    .sipoc-th { padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.1em;color:#e2e8f0;text-align:center;border-left:1px solid rgba(255,255,255,.08); }
+    .sipoc-th:first-child { border-left:none; }
+    .sipoc-row { display:grid;grid-template-columns:repeat(5,1fr) 28px;border-bottom:1px solid #e2e8f0; }
+    .sipoc-row:last-child { border-bottom:none; }
+    .sipoc-cell { padding:4px;background:#fff;border-left:1px solid #e2e8f0; }
+    .sipoc-cell:first-child { border-left:none; }
+    .sipoc-cell-alt { background:#f8fafc; }
+    .sipoc-cell-input { width:100%;resize:none;border:none;background:transparent;font-size:12.5px;color:#1e293b;padding:6px 8px;outline:none;line-height:1.5;font-family:inherit; }
+    .sipoc-cell-input:focus { background:#eff6ff;border-radius:4px; }
+    .sipoc-row-del { display:flex;align-items:center;justify-content:center;background:none;border:none;color:#cbd5e1;cursor:pointer;transition:color .15s; }
+    .sipoc-row-del:hover { color:#ef4444; }
+    .sipoc-add-row { padding:10px 14px;border-top:1px solid #e2e8f0;background:#f8fafc; }
+    .sipoc-add-row-btn { display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:#6366f1;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s; }
+    .sipoc-add-row-btn:hover { background:#eef2ff; }
+    .sipoc-badge { font-size:11px;font-weight:700;letter-spacing:.08em;background:#6366f1;color:#fff;padding:3px 10px;border-radius:999px; }
+    @media print {
+      .sipoc-inline-bar, .sipoc-add-row, .sipoc-row-del, #sidebar, header, .shrink-0 { display:none !important; }
+      #viewSipoc { overflow:visible !important; }
+      .sipoc-cell-input { background:transparent !important; }
+    }
+    </style>
+    <?php endif; ?>
 
   </div>
 </div>

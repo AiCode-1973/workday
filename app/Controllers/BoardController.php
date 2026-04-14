@@ -61,6 +61,15 @@ class BoardController extends BaseController {
         $stmt->execute([$_SESSION['workspace_id'] ?? 0]);
         $members = $stmt->fetchAll();
 
+        // Dados da ferramenta (se houver)
+        $toolData = null;
+        if (($board['tool'] ?? 'none') !== 'none') {
+            $stmt = $db->prepare("SELECT content FROM board_tool_data WHERE board_id = ? AND tool_type = ?");
+            $stmt->execute([$boardId, $board['tool']]);
+            $raw = $stmt->fetchColumn();
+            $toolData = $raw ? json_decode($raw, true) : null;
+        }
+
         $this->view('layouts/app', [
             'pageTitle' => $board['name'],
             'content'   => 'boards/show',
@@ -68,6 +77,7 @@ class BoardController extends BaseController {
             'items'     => $items,
             'members'   => $members,
             'view'      => $view,
+            'toolData'  => $toolData,
         ]);
     }
 
@@ -91,6 +101,7 @@ class BoardController extends BaseController {
             'description'  => $data['description'] ?? null,
             'color'        => $data['color'] ?? '#6366f1',
             'default_view' => $data['default_view'] ?? 'kanban',
+            'tool'         => in_array($data['tool'] ?? '', ['sipoc']) ? $data['tool'] : 'none',
             'created_by'   => $user['id'],
         ]);
 
@@ -190,6 +201,70 @@ class BoardController extends BaseController {
         $db  = Database::getInstance();
         $db->prepare("DELETE FROM board_groups WHERE id=? AND board_id=?")->execute([(int)$groupId, (int)$boardId]);
         $this->json(['message' => 'Grupo removido']);
+    }
+
+    // ── Ferramentas ─────────────────────────────────────────────────────────
+
+    public function toolView(string $boardId): void {
+        $this->requireAuth();
+        $user    = $this->currentUser();
+        $bId     = (int)$boardId;
+
+        $boardModel = new BoardModel();
+        if (!$boardModel->canAccess($bId, $user['id'])) {
+            http_response_code(403);
+            $this->view('errors/403');
+            return;
+        }
+
+        $board = $boardModel->find($bId);
+        if (!$board || ($board['tool'] ?? 'none') === 'none') {
+            http_response_code(404);
+            $this->view('errors/404');
+            return;
+        }
+
+        $db   = Database::getInstance();
+        $stmt = $db->prepare("SELECT content FROM board_tool_data WHERE board_id = ? AND tool_type = ?");
+        $stmt->execute([$bId, $board['tool']]);
+        $raw      = $stmt->fetchColumn();
+        $toolData = $raw ? json_decode($raw, true) : null;
+
+        $this->view('layouts/app', [
+            'pageTitle' => $board['name'] . ' — SIPOC',
+            'content'   => 'boards/tool_sipoc',
+            'board'     => $board,
+            'toolData'  => $toolData,
+        ]);
+    }
+
+    public function saveTool(string $boardId): void {
+        $this->requireAuth();
+        $this->validateCsrf();
+        $user = $this->currentUser();
+        $bId  = (int)$boardId;
+
+        $boardModel = new BoardModel();
+        if (!$boardModel->canAccess($bId, $user['id'])) {
+            $this->json(['error' => 'Acesso negado'], 403);
+        }
+
+        $board = $boardModel->find($bId);
+        if (!$board || ($board['tool'] ?? 'none') === 'none') {
+            $this->json(['error' => 'Nenhuma ferramenta configurada para este quadro'], 422);
+        }
+
+        $data    = $this->bodyJson();
+        $content = json_encode($data, JSON_UNESCAPED_UNICODE);
+
+        $db = Database::getInstance();
+        $db->prepare("
+            INSERT INTO board_tool_data (board_id, tool_type, content, updated_at)
+            VALUES (?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = NOW()
+        ")->execute([$bId, $board['tool'], $content]);
+
+        $this->json(['message' => 'Salvo com sucesso']);
     }
 
     private function logActivity(int $boardId, ?int $itemId, int $userId, string $action, array $meta = []): void {
