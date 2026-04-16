@@ -432,7 +432,9 @@
   <div class="p-6 space-y-4">
     <h3 class="text-lg font-semibold text-gray-900">Novo Item</h3>
     <form id="newItemForm">
-      <input type="hidden" name="group_id" id="newItemGroupId"/>
+      <div id="newItemGroupWrapper">
+        <input type="hidden" name="group_id" id="newItemGroupId"/>
+      </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Título*</label>
         <input type="text" name="title" required class="form-input" placeholder="Descreva a tarefa" autofocus/>

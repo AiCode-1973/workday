@@ -117,7 +117,10 @@ const WorkdayBoard = (() => {
     STATE.board   = data.board;
     STATE.items   = data.items;
     STATE.members = data.members;
-    STATE.currentView = document.getElementById('viewKanban')?.classList.contains('hidden') === false ? 'kanban' : 'list';
+    STATE.currentView = ['kanban','list','table','calendar'].find(v => {
+      const el = document.getElementById(`view${v.charAt(0).toUpperCase() + v.slice(1)}`);
+      return el && !el.classList.contains('hidden');
+    }) ?? 'kanban';
 
     renderCurrentView();
     initDragDrop();
@@ -132,9 +135,19 @@ const WorkdayBoard = (() => {
     if (STATE.currentView === 'calendar') renderCalendar();
   }
 
-  function addItem(item) {
-    STATE.items.push(item);
-    renderCurrentView();
+  async function reloadItems() {
+    if (!STATE.board) return;
+    try {
+      const items = await WorkdayApp.api('GET', `${APP_URL}/boards/${STATE.board.id}/items`);
+      STATE.items = items;
+      renderCurrentView();
+    } catch (e) {
+      renderCurrentView();
+    }
+  }
+
+  async function addItem() {
+    await reloadItems();
   }
 
   function switchView(view) {
@@ -417,19 +430,23 @@ const WorkdayBoard = (() => {
     if (groupId) {
       document.getElementById('newItemGroupId').value = groupId;
     } else {
-      // Preenche com primeiro grupo
-      const sel    = document.createElement('select');
-      sel.name     = 'group_id';
-      sel.id       = 'newItemGroupId';
-      sel.className = 'form-input text-sm';
-      STATE.board.groups.forEach(g => {
-        const opt  = document.createElement('option');
-        opt.value  = g.id;
-        opt.textContent = g.name;
-        sel.appendChild(opt);
-      });
-      const old = document.getElementById('newItemGroupId');
-      old?.replaceWith(sel);
+      // Substitui o input hidden por um select visível com label
+      const wrapper = document.getElementById('newItemGroupWrapper');
+      if (wrapper) {
+        const sel = document.createElement('select');
+        sel.name  = 'group_id';
+        sel.id    = 'newItemGroupId';
+        sel.className = 'form-input';
+        STATE.board.groups.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.name;
+          sel.appendChild(opt);
+        });
+        wrapper.innerHTML = '<label class="block text-sm font-medium text-gray-700 mb-1">Grupo</label>';
+        wrapper.appendChild(sel);
+        wrapper.classList.add('mb-4');
+      }
     }
 
     // Assignees
@@ -451,7 +468,7 @@ const WorkdayBoard = (() => {
       const gid    = fd.get('group_id') || groupId;
       const assignees = fd.getAll('assignees[]').map(Number);
       try {
-        const res = await WorkdayApp.api('POST', `${APP_URL}/boards/${STATE.board.id}/items`, {
+        await WorkdayApp.api('POST', `${APP_URL}/boards/${STATE.board.id}/items`, {
           title: e.target.querySelector('[name="title"]').value,
           group_id: +gid,
           priority: fd.get('priority') || 'none',
@@ -459,21 +476,8 @@ const WorkdayBoard = (() => {
           description: fd.get('description') || null,
           assignees,
         });
-        STATE.items.push({
-          id: res.id,
-          board_id: STATE.board.id,
-          group_id: +gid,
-          title: e.target.querySelector('[name="title"]').value,
-          priority: fd.get('priority') || 'none',
-          due_date: fd.get('due_date') || null,
-          group_name: STATE.board.groups.find(g => g.id == gid)?.name ?? '',
-          group_color: STATE.board.groups.find(g => g.id == gid)?.color ?? '#94a3b8',
-          assignees: STATE.members.filter(m => assignees.includes(m.id)),
-          comment_count: 0, subtask_count: 0, attachment_count: 0,
-          position: 999,
-        });
-        renderCurrentView();
         WorkdayApp.closeModal();
+        await reloadItems();
         WorkdayApp.toast('Item criado', 'success');
       } catch (err) {
         WorkdayApp.toast(err.message, 'error');
@@ -513,8 +517,10 @@ const WorkdayBoard = (() => {
   }
 
   function quickAdd(groupId) {
-    const zone = document.getElementById(`group-${groupId}`);
-    if (!zone) return;
+    // Suporta Kanban (group-{id}) e Lista (list-group-{id})
+    const zone = document.getElementById(`group-${groupId}`)
+               || document.getElementById(`list-group-${groupId}`);
+    if (!zone) { openNewItemModal(groupId); return; }
     const row = document.createElement('div');
     row.className = 'quick-add-row';
     row.innerHTML = `<input type="text" class="quick-add-input" placeholder="Nome do item… (Enter para salvar)" autofocus/>`;
@@ -526,15 +532,11 @@ const WorkdayBoard = (() => {
         const title = inp.value.trim();
         if (!title) { row.remove(); return; }
         try {
-          const res = await WorkdayApp.api('POST', `${APP_URL}/boards/${STATE.board.id}/items`, {
+          await WorkdayApp.api('POST', `${APP_URL}/boards/${STATE.board.id}/items`, {
             title, group_id: groupId, priority: 'none',
           });
-          STATE.items.push({ id: res.id, board_id: STATE.board.id, group_id: groupId, title,
-            priority: 'none', group_name: STATE.board.groups.find(g=>g.id==groupId)?.name??'',
-            group_color: STATE.board.groups.find(g=>g.id==groupId)?.color??'#94a3b8',
-            assignees: [], comment_count: 0, subtask_count: 0, position: 999 });
           row.remove();
-          renderCurrentView();
+          await reloadItems();
           WorkdayApp.toast('Item adicionado', 'success');
         } catch (err) { WorkdayApp.toast(err.message, 'error'); }
       }
@@ -663,7 +665,7 @@ const WorkdayBoard = (() => {
     } catch {}
   }
 
-  return { init, switchView, filter, quickAdd, openNewItemModal, openNewGroupModal, openItemDetail, toggleDone, openAutomationsPanel, renderCurrentView, addItem };
+  return { init, switchView, filter, quickAdd, openNewItemModal, openNewGroupModal, openItemDetail, toggleDone, openAutomationsPanel, renderCurrentView, addItem, reloadItems };
 })();
 
 // ============================================================
@@ -1303,28 +1305,9 @@ const WorkdayTools = (() => {
         content: { process_title: title, rows: getModalRows() },
       });
 
-      // 3. Atualiza o estado do board
-      const boardData = document.getElementById('boardData')
-        ? JSON.parse(document.getElementById('boardData').textContent)
-        : null;
-      const grp = boardData?.board?.groups?.find(g => g.id == groupId);
-      WorkdayBoard.addItem({
-        id:             res.id,
-        board_id:       boardId,
-        group_id:       parseInt(groupId),
-        title:          title,
-        priority:       'none',
-        position:       9999,
-        tool_type:      'sipoc',
-        group_name:     grp?.name  ?? '',
-        group_color:    grp?.color ?? '#94a3b8',
-        assignees:      [],
-        comment_count:  0,
-        subtask_count:  0,
-        attachment_count: 0,
-      });
-
+      // 3. Recarrega itens do servidor e atualiza a view
       WorkdayApp.closeWideModal();
+      await WorkdayBoard.reloadItems();
       WorkdayApp.toast('Item SIPOC criado!', 'success');
     } catch (err) {
       WorkdayApp.toast(err.message, 'error');
